@@ -1,33 +1,20 @@
-name: MacRDP
+name: macOS
 on: 
   workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
-    name: MacRDP
-    runs-on: macos-latest
-    
+    runs-on: macOS-10.14
     steps:
-    - name: Setup Remote Management for VNC
-      run: |
-        # VNC bağlantılarında şifrelemeyi devre dışı bırak
-        sudo defaults write /Library/Preferences/com.apple.RemoteManagement VNCAcceptsConnectionsUnencrypted -bool true
-        # Remote Management servisini yeniden başlat
-        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent -console
-        # Ek olarak, aktif bir GUI oturumu sağlamak için Finder’ı başlat (opsiyonel)
-        open -a Finder
-        
-    - name: Enabling Remote Access
+    - uses: actions/checkout@v2
+    - name: Setting the Environment Up.
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-      run: |
-          curl -s -o start.sh -L "https://raw.githubusercontent.com/JohnnyNetsec/github-vm/main/mac/start.sh"
-          chmod +x start.sh
-          bash start.sh "$NGROK_AUTH_TOKEN"
-          
-    - name: Log In Details To VNC Server
-      run: |
-         chmod +x login.sh
-         bash login.sh
-         
-    - name: MacOS System running...
+      run: source setup.sh "hawkeye" "hawkeye" "$NGROK_AUTH_TOKEN"
+    - name: ngrok is now listening to VNC connections on...
+      run: curl --silent http://127.0.0.1:4040/api/tunnels | jq '.tunnels[0].public_url'
+    - name: Setup tmate Session
       uses: mxschmitt/action-tmate@v2
